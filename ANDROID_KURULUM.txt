@@ -5,7 +5,10 @@ LUMA Android PWA - Güncel kurulum
 3. index.html, manifest.webmanifest ve service-worker.js dosyalarının eski sürümlerinin üzerine yazın.
 4. icon-192.png ve icon-512.png dosyaları index.html ile aynı dizinde bulunmalıdır.
 5. GitHub Pages adresi: https://bexirc.github.io/Deneme/
-6. Güncellemeden sonra Chrome'da siteyi bir kez açıp yenileyin. Gerekirse siteyi kapatıp tekrar açın. PWA çevrimdışı kabuğu v3 önbellek adıyla yenilenir.
+6. Güncellemeden sonra Chrome'da siteyi bir kez açıp yenileyin. Gerekirse siteyi kapatıp tekrar açın. PWA çevrimdışı kabuğu v4 önbellek adıyla yenilenir.
 7. Android Chrome menüsünden “Uygulamayı yükle” veya “Ana ekrana ekle” seçeneğini kullanın.
 
 Not: Dosyaların canlı Android cihazda kurulumu bu paket üretimi sırasında doğrudan test edilememiştir.
+
+
+Bu sürümde: Samsung/Android klavyesinin viewport yeniden boyutlanması nedeniyle otomatik kapanmasına yol açan blur davranışı kaldırıldı; ana sekmeler için gerçek dikey kaydırma alanı tanımlandı.

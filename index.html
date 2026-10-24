@@ -1927,7 +1927,7 @@ function toast(msg,actionLabel='',action=null,duration=4500){const root=$('#toas
 const TAB_ORDER=['home','messages','calendar','memories','documents'];
 const TAB_EASE='cubic-bezier(.32,.72,0,1)';
 state.navStack=[];
-function snapshotNav(){return {tab:state.tab,scroll:window.scrollY,memoryTab:state.memoryTab,currentAlbum:state.currentAlbum}}
+function snapshotNav(){const sc=document.getElementById('mainContent');const android=document.documentElement.classList.contains('android-device');return {tab:state.tab,scroll:android&&sc?sc.scrollTop:window.scrollY,memoryTab:state.memoryTab,currentAlbum:state.currentAlbum}}
 function changeTab(tab,{dir=1,scroll=null,memoryTab=null,currentAlbum=null}={}){
  const main=$('#mainContent');if(!main){state.tab=tab;render();return}
  const rect=main.getBoundingClientRect();
@@ -1941,7 +1941,7 @@ function changeTab(tab,{dir=1,scroll=null,memoryTab=null,currentAlbum=null}={}){
  if(memoryTab)state.memoryTab=memoryTab;
  state.currentAlbum=currentAlbum;
  render();
- window.scrollTo({top:scroll!==null?scroll:0,behavior:'instant'});
+ if(document.documentElement.classList.contains('android-device'))main.scrollTop=scroll!==null?scroll:0;else window.scrollTo({top:scroll!==null?scroll:0,behavior:'instant'});
  const d=dir>0?1:-1;
  main.animate([{transform:`translate3d(${d*100}%,0,0)`},{transform:'translate3d(0,0,0)'}],{duration:350,easing:TAB_EASE});
  const out=ghost.animate([{transform:'translate3d(0,0,0)',opacity:1},{transform:`translate3d(${-d*30}%,0,0)`,opacity:0}],{duration:350,easing:TAB_EASE,fill:'forwards'});
@@ -2492,6 +2492,46 @@ function docHtmlForExport(docs){
   -webkit-mask:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M15.5 4.5 8 12l7.5 7.5' fill='none' stroke='black' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/contain no-repeat!important;
 }
 [data-theme="dark"] #viewer .viewer-top>button:first-child{background:rgba(180,190,210,.16)!important;border-color:rgba(255,255,255,.32)!important}
+</style>
+
+
+<style id="luma-android-tab-scroll-and-keyboard-fix">
+/* Android/Samsung: use a real bounded scroll container for the five main tabs. */
+@media (max-width: 760px) {
+  html.android-device, html.android-device body {
+    width:100% !important; height:100% !important; min-height:100% !important;
+    max-height:none !important; overflow-x:hidden !important; overflow-y:hidden !important;
+    overscroll-behavior-y:none !important; touch-action:pan-y pinch-zoom !important;
+  }
+  html.android-device body { padding-top:0 !important; padding-bottom:0 !important; }
+  html.android-device #appShell {
+    display:flex !important; flex-direction:column !important;
+    height:100vh !important; height:100dvh !important;
+    min-height:0 !important; max-height:none !important;
+    overflow:hidden !important; padding-bottom:0 !important;
+  }
+  html.android-device #topbar, html.android-device .topbar {
+    position:relative; flex:0 0 auto;
+  }
+  html.android-device #mainContent {
+    display:block !important; flex:1 1 auto !important;
+    height:auto !important; min-height:0 !important; max-height:none !important;
+    overflow-x:hidden !important; overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior-y:contain !important; touch-action:pan-y pinch-zoom !important;
+    scrollbar-width:none; padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+    transform:translateZ(0);
+  }
+  html.android-device #mainContent::-webkit-scrollbar { display:none; }
+  html.android-device #mainContent > * { min-width:0; }
+  html.android-device #msgList {
+    touch-action:pan-y pinch-zoom !important; -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior-y:contain !important;
+  }
+  html.android-device body.messages-keyboard-active #mainContent {
+    flex:1 1 auto !important; min-height:0 !important;
+  }
+}
 </style>
 
 </body></html>`;
@@ -4259,7 +4299,7 @@ function openDeletedPage(){
 function dataAction(name){const el=document.createElement('button');el.dataset.action=name;el.style.display='none';document.body.appendChild(el);el.click();el.remove()}
 function bindPullToDeleted(){
  let y0=null,pulled=0;
- const atBottom=()=>window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4;
+ const atBottom=()=>{const m=document.getElementById('mainContent');if(document.documentElement.classList.contains('android-device')&&m)return m.scrollTop+m.clientHeight>=m.scrollHeight-4;return window.innerHeight+window.scrollY>=document.documentElement.scrollHeight-4};
  window.addEventListener('touchstart',e=>{y0=e.touches[0].clientY;pulled=0},{passive:true});
  window.addEventListener('touchmove',e=>{if(y0===null||state.tab!=='memories'||state.memoryTab!=='albums'||!atBottom())return;const dy=y0-e.touches[0].clientY;if(dy>0)pulled=dy;if(pulled>90){y0=null;pulled=0;openDeletedPage()}},{passive:true});
  window.addEventListener('touchend',()=>{y0=null;pulled=0},{passive:true});
@@ -4398,7 +4438,7 @@ document.addEventListener('click',e=>{if(window.__mediaLongPressed&&e.target.clo
 document.addEventListener('click',e=>{const b=e.target.closest('#mediaContextPopover [data-action]');if(!b)return;e.preventDefault();e.stopImmediatePropagation();const action=b.dataset.action;closeMediaContextMenu();eventAction(action,b)},true);
 document.addEventListener('input',e=>{if(e.target.id==='memorySearch'){state.searchQuery=e.target.value;const pos=e.target.selectionStart;render();const n=$('#memorySearch');if(n){n.focus();n.setSelectionRange(pos,pos)}}});
 $('#searchOpen').onclick=openSearch;$('#notificationOpen').onclick=openNotifications;$('#profileOpen').onclick=openProfile;$('#moodAddBtn').onclick=()=>openMoodEditor();$('#mediaInput').addEventListener('change',e=>{if(e.target.files?.length)addMediaFiles(Array.from(e.target.files));e.target.value=''});$('#restoreInput').addEventListener('change',e=>{if(e.target.files?.[0])importBackupFile(e.target.files[0]);e.target.value=''});
-let __lastY=0;window.addEventListener('scroll',()=>{const y=Math.max(0,window.scrollY);const t=$('#topbar');if(t){if(!t.classList.contains('compact')&&y>110)t.classList.add('compact');else if(t.classList.contains('compact')&&y<50)t.classList.remove('compact')}if(state.tab==='messages'){document.body.classList.add('nav-min')}else if(state.tab==='memories'){document.body.classList.remove('nav-min')}else{const d=y-__lastY;if(y<60)document.body.classList.remove('nav-min');else if(d>6)document.body.classList.add('nav-min');else if(d<-6)document.body.classList.remove('nav-min');if(Math.abs(d)>6)__lastY=y}},{passive:true});window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{if(state.settings.theme==='system')applyTheme()});
+let __lastY=0;const __syncMainScrollUI=y=>{y=Math.max(0,y||0);const t=$('#topbar');if(t){if(!t.classList.contains('compact')&&y>110)t.classList.add('compact');else if(t.classList.contains('compact')&&y<50)t.classList.remove('compact')}if(state.tab==='messages'){document.body.classList.add('nav-min')}else if(state.tab==='memories'){document.body.classList.remove('nav-min')}else{const d=y-__lastY;if(y<60)document.body.classList.remove('nav-min');else if(d>6)document.body.classList.add('nav-min');else if(d<-6)document.body.classList.remove('nav-min');if(Math.abs(d)>6)__lastY=y}};window.addEventListener('scroll',()=>__syncMainScrollUI(window.scrollY),{passive:true});document.getElementById('mainContent')?.addEventListener('scroll',e=>__syncMainScrollUI(e.currentTarget.scrollTop),{passive:true});window.matchMedia('(prefers-color-scheme: light)').addEventListener?.('change',()=>{if(state.settings.theme==='system')applyTheme()});
 function checkHourlyReminder(){if(state.settings.weeklyBackup&&(!state.settings.lastBackup||Date.now()-state.settings.lastBackup>7*86400000))addNotice('LUMA yedeğini almayı unutma.','Yedek al',()=>openBackup());if(!state.settings.reminders)return;const now=new Date(),date=dateKey(now),hour=now.getHours(),wake=Number((state.settings.wakeTime||'08:00').slice(0,2)),sleep=Number((state.settings.sleepTime||'23:00').slice(0,2));if(hour<wake||hour>=sleep)return;if(state.moodRecords.some(r=>r.date===date&&Number(r.time.slice(0,2))===hour))return;const key=`${date}-${String(hour).padStart(2,'0')}`;if(sessionStorage.getItem('luma-reminded-hour')===key)return;sessionStorage.setItem('luma-reminded-hour',key);addNotice('Ruh halini kaydetmek ister misin?','Kaydet',()=>{openMoodEditor(null,date);setTimeout(()=>{const t=$('#moodTime');if(t)t.value=`${String(hour).padStart(2,'0')}:00`},30)},7000)}
 async function init(){bindMemorySearchDismiss();__bindVoicePlayer();bindPullToDeleted();if(window.visualViewport){visualViewport.addEventListener('resize',__kbLayout);visualViewport.addEventListener('scroll',__kbLayout)}document.addEventListener('click',e=>{const ss=e.target.closest('[data-action="save-story-app"]');if(ss){const st=state.story,items=st.ids.map(getMedia).filter(Boolean).slice(0,5);if(!items.length){toast('Hikâye için fotoğraf seç.');return}storyBlob(items).then(b=>b&&saveStoryToApp(b));return}const sa=e.target.closest('[data-sd-add]');if(sa){openSpecialForm(null,sa.dataset.sdAdd);return}const so=e.target.closest('[data-sd-open]');if(so){openSpecialForm(so.dataset.sdOpen);return}const st=e.target.closest('[data-sd-toggle]');if(st){const sel=specialSelState();const id=st.dataset.sdToggle;sel.ids=sel.ids.includes(id)?sel.ids.filter(x=>x!==id):[...sel.ids,id];refreshSpecials();return}if(e.target.closest('#selBarExit')){exitAnySel();return}if(e.target.closest('#selBarDel')){deleteAnySel();return}const al=e.target.closest('[data-album-toggle]');if(al){const id=al.dataset.albumToggle;state.albumSel=(state.albumSel||[]).includes(id)?state.albumSel.filter(x=>x!==id):[...(state.albumSel||[]),id];render();return}const o=e.target.closest('[data-note-open]');if(o){openNoteEditor(o.dataset.noteOpen);return}const t=e.target.closest('[data-note-toggle]');if(t){toggleNoteSel(t.dataset.noteToggle);return}const nmb=e.target.closest('#noteMenuBtn,#allNotesMenuBtn');if(nmb)toggleNotePop(nmb)});loadBgs();ensureAppBg();loadCycle();setTimeout(()=>{checkCycleLate();stressReports()},2600);loadHidden();loadFolders();loadMessages();loadMessageMedia();loadContacts();loadTrashContacts();document.addEventListener('click',e=>{const f=e.target.closest('[data-folder]');if(f&&state.tab==='documents'){if(f.dataset.folder==='trash')openTrash();else openFolderPage(f.dataset.folder)}if(e.target.closest('#newFolderBtn'))openNewFolder()});document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden'){state.hiddenAt=Date.now();return}if(!(state.settings.pinHash||state.settings.pin))return;const d=state.settings.lockDelay??0;if(d===0||(state.hiddenAt&&Date.now()-state.hiddenAt>=d))showPinLock()});applyAccent();setTimeout(()=>$('#lumaSplash')?.remove(),2000);setTimeout(()=>showOnboarding(),2150);loadLocal();loadTrashDocs();purgeTrashDocs();applyTheme();try{await getDB();const media=await dbGetAll('media');state.media=media.map(x=>({...x.meta,blob:x.blob,url:x.blob?URL.createObjectURL(x.blob):x.meta?.url||''})).filter(x=>x.id);state.hiddenMedia=state.media.filter(x=>x.hidden);state.media=state.media.filter(x=>!x.hidden);const trash=await dbGetAll('trash');state.trash=trash.map(x=>({...x.meta,blob:x.blob,url:x.blob?URL.createObjectURL(x.blob):''})).filter(x=>x.id);for(const m of [...state.trash]){if(m.deletedAt&&Date.now()-m.deletedAt>7*86400000){state.trash=state.trash.filter(x=>x.id!==m.id);await dbDelete('trash',m.id)}}}catch(e){console.warn('IndexedDB unavailable',e);toast('Bu tarayıcıda yerel medya depolaması sınırlı olabilir.')}render();if(state.settings.pinHash||state.settings.pin){showPinLock()}setTimeout(checkHourlyReminder,2300);document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')checkHourlyReminder()});if(state.settings.weeklyBackup&&(!state.settings.lastBackup||Date.now()-state.settings.lastBackup>7*86400000)){setTimeout(()=>addNotice('LUMA yedeğini almayı unutma.','Yedek al',()=>openBackup()),1500)}}
 function showPinLock(){
@@ -4571,12 +4611,12 @@ const run=()=>{try{__kbLayout()}catch(_){}const el=ta();const open=document.body
  if(Date.now()<until)raf=requestAnimationFrame(run);else raf=0};
 const kick=ms=>{until=Date.now()+ms;if(!raf)raf=requestAnimationFrame(run)};
 document.addEventListener('focusin',e=>{if(e.target!==ta())return;wasOpen=false;kick(1200)},true);
-document.addEventListener('focusout',e=>{if(e.target!==ta())return;wasOpen=false;kick(600);setTimeout(()=>{document.body.classList.remove('kb-open','messages-keyboard-active','msg-compose-focused');const c=document.getElementById('msgCompose');if(c)c.style.bottom=''},650)},true);
+document.addEventListener('focusout',e=>{if(e.target!==ta())return;wasOpen=false;kick(600);setTimeout(()=>{if(document.activeElement===ta())return;document.body.classList.remove('kb-open','messages-keyboard-active','msg-compose-focused');const c=document.getElementById('msgCompose');if(c)c.style.bottom=''},650)},true);
 const vv=window.visualViewport;
 if(vv){const h=()=>{kick(500);const el=ta();if(!el||document.activeElement!==el)return;
   const kb=Math.max(0,Math.round(innerHeight-vv.height-vv.offsetTop));
   if(kb>90)wasOpen=true;
-  else if(wasOpen&&kb<=40){wasOpen=false;el.blur()}};
+  /* Android/Samsung keyboard may report a brief near-zero viewport delta while opening. Never blur the message field from a resize event. */};
  vv.addEventListener('resize',h);vv.addEventListener('scroll',h)}
 })();
 </script>
@@ -4591,13 +4631,15 @@ const loop=()=>{raf=0;const f=forced();const tg=f!==null?f:target;
  if(reduce||Math.abs(tg-p)<.004){set(tg);B.classList.remove('nav-scrub');return}
  B.classList.add('nav-scrub');set(p+(tg-p)*.2);raf=requestAnimationFrame(loop)};
 const kick=()=>{if(!raf)raf=requestAnimationFrame(loop)};
-addEventListener('scroll',()=>{const y=Math.max(0,scrollY),max=Math.max(0,document.documentElement.scrollHeight-innerHeight);
+const onScroll=e=>{const main=document.getElementById('mainContent');const inMain=!!(main&&e&&e.currentTarget===main);const y=Math.max(0,inMain?main.scrollTop:scrollY),max=Math.max(0,inMain?main.scrollHeight-main.clientHeight:document.documentElement.scrollHeight-innerHeight);
  const d=y-lastY;lastY=y;
  if(forced()!==null){kick();return}
  if(y>max+1)return;
  if(y<30){target=0;kick();return}
  B.classList.add('nav-scrub');target=clamp(p+d/70);set(target);
- clearTimeout(idle);idle=setTimeout(()=>{target=target>.5?1:0;kick()},130)},{passive:true});
+ clearTimeout(idle);idle=setTimeout(()=>{target=target>.5?1:0;kick()},130)};
+addEventListener('scroll',onScroll,{passive:true});
+const scrollMain=document.getElementById('mainContent');if(scrollMain)scrollMain.addEventListener('scroll',onScroll,{passive:true});
 new MutationObserver(()=>kick()).observe(B,{attributes:true,attributeFilter:['class']});
 set(forced()===1?1:0);target=p;
 })();
@@ -4920,6 +4962,46 @@ html.android-device body::before,html.android-device body::after{border:0!import
  syncBars();new MutationObserver(syncBars).observe(document.documentElement,{attributes:true,attributeFilter:['data-theme','class']});window.addEventListener('pageshow',syncBars);window.addEventListener('focus',syncBars);
 })();
 </script>
+
+
+<style id="luma-android-tab-scroll-and-keyboard-fix">
+/* Android/Samsung: use a real bounded scroll container for the five main tabs. */
+@media (max-width: 760px) {
+  html.android-device, html.android-device body {
+    width:100% !important; height:100% !important; min-height:100% !important;
+    max-height:none !important; overflow-x:hidden !important; overflow-y:hidden !important;
+    overscroll-behavior-y:none !important; touch-action:pan-y pinch-zoom !important;
+  }
+  html.android-device body { padding-top:0 !important; padding-bottom:0 !important; }
+  html.android-device #appShell {
+    display:flex !important; flex-direction:column !important;
+    height:100vh !important; height:100dvh !important;
+    min-height:0 !important; max-height:none !important;
+    overflow:hidden !important; padding-bottom:0 !important;
+  }
+  html.android-device #topbar, html.android-device .topbar {
+    position:relative; flex:0 0 auto;
+  }
+  html.android-device #mainContent {
+    display:block !important; flex:1 1 auto !important;
+    height:auto !important; min-height:0 !important; max-height:none !important;
+    overflow-x:hidden !important; overflow-y:auto !important;
+    -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior-y:contain !important; touch-action:pan-y pinch-zoom !important;
+    scrollbar-width:none; padding-bottom:calc(120px + env(safe-area-inset-bottom, 0px)) !important;
+    transform:translateZ(0);
+  }
+  html.android-device #mainContent::-webkit-scrollbar { display:none; }
+  html.android-device #mainContent > * { min-width:0; }
+  html.android-device #msgList {
+    touch-action:pan-y pinch-zoom !important; -webkit-overflow-scrolling:touch !important;
+    overscroll-behavior-y:contain !important;
+  }
+  html.android-device body.messages-keyboard-active #mainContent {
+    flex:1 1 auto !important; min-height:0 !important;
+  }
+}
+</style>
 
 </body>
 </html>
