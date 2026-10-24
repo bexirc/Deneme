@@ -1,0 +1,19 @@
+LUMA Android ana ekran kısayolu / PWA paketi
+
+ÖNEMLİ: Android Chrome, telefondaki file:// HTML dosyasını gerçek bir yüklenebilir PWA olarak kuramaz. Bu paket HTTPS destekli bir web adresinde yayımlanmalıdır.
+
+Dosyalar:
+- index.html: LUMA uygulaması
+- manifest.webmanifest: Ana ekran adı, simgesi ve bağımsız uygulama görünümü
+- service-worker.js: Uygulama kabuğunun çevrimdışı açılabilmesi için önbellek
+- icons/: Ana ekran simgeleri
+
+Kurulum:
+1. Bu klasördeki tüm dosya ve klasörleri aynı dizin yapısını koruyarak HTTPS destekli bir statik barındırma hizmetine yükle (ör. GitHub Pages).
+2. Android telefonda Chrome ile yayımlanan https:// adresini aç.
+3. Sayfa tamamen yüklendikten sonra Chrome menüsünden “Uygulamayı yükle” veya “Ana ekrana ekle” seçeneğini seç.
+4. Ana ekrandaki LUMA simgesini aç. İlk çevrimiçi açılıştan sonra uygulama kabuğu çevrimdışı önbelleğe alınır.
+
+Notlar:
+- Yalnızca index.html dosyasını indirip yerel dosya olarak açmak, PWA kurulumu için yeterli değildir.
+- Bu paket HTML uygulamasını Android uygulaması gibi açılan web uygulaması görünümüne hazırlar; iOS'a özgü bazı özellikler Android'de birebir aynı çalışmayabilir.
